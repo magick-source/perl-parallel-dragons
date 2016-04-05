@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+LICENCE-artistic-2_0.txt
+LICENCE-gpl-2.0.txt
+t/Parallel-Dragons.t
+lib/Parallel/Dragons.pm
