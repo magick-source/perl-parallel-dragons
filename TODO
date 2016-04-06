@@ -1,0 +1,11 @@
+# TODO
+
+This is not an exaustive list, just some of the items that
+come to my mind and are more obvious.
+
+A full list of bugs, feature requests and planned TODOs
+can be found in github and magick-source.net
+
+[] Logging based on a class
+   []  Support for Log4Perl ??
+

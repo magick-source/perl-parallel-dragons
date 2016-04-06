@@ -12,6 +12,8 @@ use IO::Select;
 use IO::Socket::UNIX;
 use Time::HiRes qw( usleep );
 
+use POSIX qw(WNOHANG);
+
 use Data::Dumper;
 
 #######################################################################
@@ -298,6 +300,14 @@ sub get_listen_socket {
     return $self->{server_socket};
 }
 
+sub daemon_name {
+  my $self = shift;
+
+  my $name = $self->sockfile;
+  ($name) = (split m{/}, $name)[-1];
+  return "Dragons of $name";
+}
+
 sub check_daemon {
     my $self = shift;
 
@@ -347,12 +357,12 @@ sub fork_child {
     } elsif (defined $pid) {
         srand();
         eval {
-            $sub->()
+            $sub->();
             1;
         } or do {
             my $error = $@ || 'Zombie error';
             FATAL "Error in child process: %s", $error;
-        }
+        };
 
         exit 0;
     }
@@ -665,7 +675,7 @@ sub _server_main {
 sub _sm_start_child {
     my $self = shift;
 
-    my $finished = wait_for_children( $self->{_childs} );
+    my $finished = wait_for_children( $self );
     if ($finished and @$finished and $self->can('post_child_exit')) {
         $self->post_child_exit( $_ )
             for @$finished;
