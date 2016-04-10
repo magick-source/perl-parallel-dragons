@@ -1,5 +1,5 @@
-Parallel-Dragons
-================
+
+=head1 Parallel-Dragons
 
 Do you need to run some code every 2 seconds, but no more than 5 times?
 Now you can - that's the basic usage of Parallel::Dragons.
@@ -15,7 +15,7 @@ and keeps fetching items from the queue and processing them.
 In the second case, each children will run main() once and return - and
 later a new children will be started.
 
-INSTALLATION
+=head1 INSTALLATION
 
 To install this module type the following:
 
@@ -24,7 +24,7 @@ To install this module type the following:
    make test
    make install
 
-DEPENDENCIES
+=head1 DEPENDENCIES
 
 this module requires several other modules, but all are usually part
 of perl core:
@@ -41,13 +41,13 @@ This module requires these other modules:
   Time::HiRes - it sleeps for subsecond intervals when idle
 
 
-ACKNOLEDGEMENT
+=head1 ACKNOLEDGEMENT
 
 Most of this code was written while working on booking.com projects
 during booking.com time - the code was later generalized and move
 to a namespace that makes (a bit) more sense.
 
-COPYRIGHT AND LICENCE
+=head1 COPYRIGHT AND LICENCE
 
 This is licensed with GPL 2.0+ or perl's artistic licence
 the files with both licences are part of this package
