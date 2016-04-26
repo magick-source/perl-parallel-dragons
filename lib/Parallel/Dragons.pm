@@ -681,16 +681,22 @@ sub _server_main {
 sub _sm_start_child {
     my $self = shift;
 
+    my $done = 0;
+
     my $finished = wait_for_children( $self );
     if ($finished and @$finished and $self->can('post_child_exit')) {
         $self->post_child_exit( $_ )
             for @$finished;
+
+        $done += @$finished;
     }
 
     if ( $self->{_monitor_called} < time ) {
         $self->{_monitor_called} = time;
         $self->monitor
             if $self->can('monitor');
+
+        $done++;
     }
 
     if ($self->{stopping}) {
@@ -706,13 +712,18 @@ sub _sm_start_child {
         return;
     }
 
-    return if $self->{_restart_next} > time;
+    return $self->_idle( $done )
+      if $self->{_restart_next} > time;
+
+    return $self->_idle( $done )
+      if scalar @{$self->{_childs}} >= $self->{max_childs};
 
     $self->{need_childs} = $self->can('need_childs')
         ? $self->need_childs
         : $self->{max_childs};
 
-    return if scalar @{$self->{_childs}} >= $self->{need_childs};
+    return $self->_idle( $done )
+      if scalar @{$self->{_childs}} >= $self->{need_childs};
 
     TRACE "Going to start a child %d => %d",
         scalar @{$self->{_childs}}, $self->{need_childs};
@@ -758,6 +769,17 @@ sub _sm_start_child {
     } else {
         $self->{_restart_next} = time + $self->{_wait};
     }
+}
+
+sub _idle {
+  my ($self,$done) = @_;
+
+  return if $done;
+
+  $self->idle()
+    if $self->can('idle');
+
+  return;
 }
 
 #######################################################################
