@@ -242,6 +242,12 @@ sub vmsize {
     return $size * 1024;
 }
 
+sub childs_running {
+  my $self = shift;
+
+  return scalar @{ $self->{_childs} || [] };
+}
+
 sub sockfile {
     my $self = shift;
 
