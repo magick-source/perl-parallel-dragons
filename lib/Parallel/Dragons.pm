@@ -406,6 +406,12 @@ sub wait_for_children {
     return \@done;
 }
 
+sub is_foreground {
+  my ($self) = @_;
+
+  $self->{_foreground};
+}
+
 ################################################################
 ## Child code - init and run the child process/task
 ################################################################
