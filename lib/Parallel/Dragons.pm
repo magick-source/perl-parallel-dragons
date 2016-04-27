@@ -493,7 +493,7 @@ sub _claim_wrapper {
                 if $self->can('task_failed');
         };
 
-#         $self->_task_done($error);
+        $self->_task_done($error);
     }
 }
 
