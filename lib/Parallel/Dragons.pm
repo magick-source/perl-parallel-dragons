@@ -586,6 +586,13 @@ sub _cmd_start_foreground {
 
     $self->{_foreground} = 1;
 
+    if ($self->can('pre_start')) {
+        $self->pre_start();
+        if ($self->{stopping}) {
+            INFO "Start prevented by pre_start" unless IS_CRONJOB;
+            return;
+        }
+    }
     if ($self->can('pre_fork')) {
         TRACE "Calling pre_fork";
         eval {
