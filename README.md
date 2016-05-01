@@ -39,6 +39,11 @@ This module requires these other modules:
 
   Time::HiRes - it sleeps for subsecond intervals when idle
 
+## SUPPORT AND BUGS
+
+the main issues tracking of this project is in
+
+  http://magick-source.net/MagickPerl/Parallel-Dragons/
 
 ## ACKNOLEDGEMENT
 
@@ -51,7 +56,7 @@ to a namespace that makes (a bit) more sense.
 This is licensed with GPL 2.0+ or perl's artistic licence
 the files with both licences are part of this package
 
-Copyright (C) 2016 by Marco Neves
+Copyright (C) 2016 by theMage
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.22.1 or,
