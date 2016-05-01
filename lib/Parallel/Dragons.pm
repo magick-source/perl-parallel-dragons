@@ -4,7 +4,7 @@ use 5.022001;
 use strict;
 use warnings;
 
-our $VERSION = '0.9.1';
+our $VERSION = '0.9.2';
 
 use Carp;
 use Socket;
