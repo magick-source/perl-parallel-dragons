@@ -4,7 +4,7 @@ use 5.022001;
 use strict;
 use warnings;
 
-our $VERSION = '0.9.3';
+our $VERSION = '0.9.4';
 
 use Carp;
 use Socket;
@@ -193,6 +193,7 @@ sub check_pid {
 my %commands = (
     start       => '_cmd_start_daemon',
     startfg     => '_cmd_start_foreground',
+    startdocker => '_cmd_start_docker',
     stop        => '_cmd_stop_daemon',
     help        => '_cmd_help_daemon',
 
@@ -577,6 +578,20 @@ sub _cmd_start_daemon {
             FATAL "Not able to start the daemon";
         }
     }
+}
+
+sub _cmd_start_docker {
+    my $self = shift;
+
+    if ($self->can('pre_start')) {
+        $self->pre_start();
+        if ($self->{stopping}) {
+            INFO "Start prevented by pre_start" unless IS_CRONJOB;
+            return;
+        }
+    }
+    
+    $self->_server_main();
 }
 
 sub _cmd_start_foreground {
