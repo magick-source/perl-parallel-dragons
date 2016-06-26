@@ -1245,8 +1245,13 @@ Parallel::Dragons. This is just another option.
 
 Please report any bugs , or request features in:
 
-* github: https://github.com/themage/perl-parallel-dragons/
-* Magick Source: http://magick-source.net/project/view/10/
+=over 4
+
+=item github: https://github.com/themage/perl-parallel-dragons/
+
+=item Magick Source: http://magick-source.net/MagickPerl/hercules
+
+=back
 
 
 =head1 AUTHOR
