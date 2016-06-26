@@ -4,7 +4,7 @@ use 5.022001;
 use strict;
 use warnings;
 
-our $VERSION = '0.9.2';
+our $VERSION = '0.9.3';
 
 use Carp;
 use Socket;
@@ -931,6 +931,294 @@ It doesn't know, and doesn't care about what the code does. Even when
 used in queue driven mode, it doesn't care about the queue, leaving the
 implementation of the queue access to the application itself.
 
+=head1 USE
+
+Parallel::Dragon was written to be the parent of you daemon class.
+
+The minimal Daemon you can create implements only the sub main, which
+does the job you need done. In this case max_childs will default to the
+number of CPUs in your server and a new child is created every 3 seconds
+until that number is reached.
+
+The method new doesn't take any parameters, but the class handles @ARGS
+to accept several command line commands and options.
+
+Most of the time, you want to call $your_class->new()->run() and let
+Parallel::Dragons take care of everything for you.
+
+Unlike what happens with most libraries, you don't call methods in
+Parallel::Dragons - Parallel::Dragons calls methods you write for it.
+
+Parallel::Dragons was created with the idea that by defining specific
+methods in your class you can change the way your Dragon behaves. We
+call those methods hooks, and that's what the next section is about.
+
+Parallel::Dragons works by having a main process that starts childs to
+do all the work - the main process only stops when a small set of hooks
+fails with error.
+
+=head1 HOOKS
+
+The hooks as listed in the order they are usually called. Some of them
+are called in the main process, some of them are called in the child
+process - this list tells you all you need to know.
+
+=head2 max_childs
+
+MAIN: Called during the init phase of the main process - it's assumed
+to be a constant - see L<needs_childs> for a more dynamic hook. Your
+dragon will never create more than <max_childs> at the same time.
+
+Params: $self
+
+=head2 wait_before_restart
+
+MAIN: called during the init phase of the main process - it's assumed
+to be a constant and represents the number of seconds that the main
+process waits between starting two childs and between the end of a child
+and starting a new one when the max_childs is reached.
+
+See L<restart_next> for a more dynamic way to decide when to start
+the next child.
+
+Params: $self
+
+=head2 restart_after
+
+MAIN: if your Dragon uses a <queue> based model, this is the number
+of time a child will ask for tasks before ending. This is called
+during the init phase of the main process and is assumed to be a
+constant.
+
+Params: $self
+
+=head2 max_memory_per_child
+
+MAIN: this is called during the init phase of the main process and is
+assumed to be a constant. It's used only in Dragons that use the
+<queue> model - when a child ends executing main for a task, it checks
+whether it is using more than this amount of memory and ends if it is.
+
+Params: $self
+
+=head2 pre_start
+
+MAIN: called before the Dragon is started. 
+
+Note: pre_start can prevent the Dragon from starting by calling
+C<< $self->stop >>
+
+Params: $self
+
+=head2 need_childs
+
+MAIN[in the loop]: it's called every time it's time to start a new
+child to decide if a child needs to be created.
+
+Params: $self
+
+=head2 pre_fork
+
+MAIN[in the loop]: the decision to create a new child was made, this
+allow you to set any data you need to pass to the child.
+
+Params: $self
+
+=head2 post_child_start
+
+MAIN[in the loop]: called in the main process imediately after a new
+child is created.
+
+Params: $self, $child
+
+=head2 restart_next
+
+MAIN[in the loop]: called after a child is started and is expected to
+return an unix timestamp for when the next child should be started. The
+child will only be started if there are less than L<max_childs> running.
+
+Params: $self
+
+=head2 init_child
+
+CHILD: called when a new child is created.
+
+Params: $self
+
+=head2 data_consumer
+
+CHILD: expected to return a L<Data::Consumer> compatible object. If this
+method is used, the Dragon will run in <DC> mode. In this mode the method
+main will be called as a (modified) consume call back. See L<main>.
+
+Params: $self
+
+=head2 claim_task
+
+CHILD: expected to return a <task> that main will be able to process. If
+claim_task is used, the Dragon will run in <queue> mode. In this mode main
+will be called with the task return by claim_tasks.
+
+If claim_task returns false, the child will exit - and a new one will
+be created by the MAIN process when time for that comes.
+
+Params: $self
+
+=head2 Note on L<data_consumer> and L<claim_task>
+
+If neither of those methods exists, main will run once for each child
+and the child will end after that. We call that <single run> mode.
+
+=head2 main
+
+CHILD: this is the body of the child - all the other methods are intented
+to setup the work to be done in this method.
+
+Depending on which mode the Dragon is running in, the parameters will
+differ, but a single Dragon will always recieve the same type of
+parameters - meaning, all the childs of a given Dragon will always run
+in the same mode, as the mode depends on the existence of the methods
+L<data_consumer> and L<claim_task>.
+
+Params:
+
+=over 4
+
+=item DC mode: $self, $id
+
+The $id is the $id claimed by L<Data::Consumer> - your main method
+should be able to handle getting the task from that id.
+
+=item queue mode: $self, $task
+
+the $task returned by L<claim_task>
+
+=item single run more: $self
+
+=back
+
+=head2 task_done
+
+CHILD[queue mode]: called when the child finishes processing a task and
+the main method ended without errors. if the main method dies,
+L<task_failed> will be called, instead of task_done.
+
+task_done is only called in queue mode.
+
+Params: $self, $task
+
+=head2 task_failed
+
+CHILD[queue mode]: called when the main method dies. 
+
+Params: $self, $task
+
+=head2 post_child_exit
+
+MAIN[in the loop]: when a child ends, post_child_exit is called. This
+allows you to clean up any data you may have in the main process
+specifically for that child.
+
+Params: $self, $child
+
+=head2 pre_exit
+
+MAIN: Called just before the process ends - allows you to run any clean
+up you main want.
+
+Params: $self
+
+=head1 ADDITIONAL HOOKS
+
+This two hooks are not related with the workflow of managing child
+processes. However, this hooks are still running in the loop of managing
+childs, so they should be as efficient as possible.
+
+=head2 monitor
+
+MAIN[in the loop]: monitor is called once a seconds in the main
+process.
+
+Params: $self
+
+=head2 idle
+
+MAIN[in the loop]: idle is called in the main process when no child
+as ended, monitor didn't run and no child was created in that cycle.
+
+Params: $self
+
+=head1 COMMANDS
+
+All the Dragons support several command line commands. You run a command
+by calling your dragon followed by that command. Example:
+
+<dragon.pl> start
+
+=head2 start
+
+Starts the Dragon as a dameon - it detachs from the current terminal,
+create log files and socket file in /tmp. Before starting a new Dragon
+it checks if there is a Dragon running and if it is responsive.
+
+A normal thing to do, if you want your Dragons to never stop running
+is to have a minutely cron starting then - if they are already running
+nothing will happen.
+
+=head2 startfg
+
+Runs the dragon in the foreground, as a single process. Useful to test
+and debug your process. It still calls all the relevant methods, except
+for post_child_start and post_child_exit.
+
+=head2 stop
+
+Stops a Dragon started with L<start>. This uses the socket file to tell
+the dragon to stop. The stopping process is graceful, which means that
+this command tells the MAIN process of the running process that you want
+it to stop, and it tells all their childs to stop when they are done with
+their corrent task, which may take some time, depending on how long each
+of you tasks takes to finish.
+
+=head2 ping
+
+Send a ping command to the MAIN process of a running. If there is a
+Daemonized Dragon running, it will respond with pong.
+
+=head2 info
+
+Sends a info request to the MAIN process of a running Dragon and
+gets some information about it's status - this will probably be
+extended in the future.
+
+=head1 ENVIRONMENT VARIABLES
+
+This variables are useful when running start or startfg. The control the
+amount of information you will see from the Parallel::Dragons itself.
+
+=head2 DRAGONS_DEBUG
+
+Expected a values between 0 and 10. The relevant levels are:
+
+=over 4
+
+=item 0 - no debug.
+
+=item 1 - some information
+
+=item 3 - debug
+
+=item 10 - trace
+
+=back
+
+=head2 DRAGONS_CRONJOB
+
+Expected to be a true/false (1/0) value. It disables information about
+other or not a Dragon was already or a new one was started.
+
+Useful for cronjobs - may be replaced in the future with a check of a
+TTY in STDIN/STDOUT
 
 =head1 SEE ALSO
 
